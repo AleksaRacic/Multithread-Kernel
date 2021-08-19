@@ -31,6 +31,10 @@ void system32::dispatch(){
 
 }
 
+static volatile int system32::getSwitchContextReq()const {
+	return switch_context_req;
+}
+
 void interrupt system32::myTimer(){
 	static PCB *next_thread = NULL;
 	static volatile unsigned int tsp, tss;

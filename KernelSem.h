@@ -17,7 +17,7 @@ public:
 	int val () const;
 private:
 	int value;
-
+	void dec();
 };
 
 #endif /* KERNELSEM_H_ */
