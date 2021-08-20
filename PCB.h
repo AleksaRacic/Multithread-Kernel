@@ -10,6 +10,8 @@
 
 #include "thread.h"
 #include "list.h"
+#include "SCHEDULE.H"
+#include "system32.h"
 class PCB {
 public:
 	static volatile ID max_id;
@@ -18,6 +20,8 @@ public:
 	PCB(Thread *myThread, StackSize stack_size, Time time_slice);
 	virtual ~PCB();
 	status my_status;
+
+	static PCB* getPCBById(ID);
 
 	unsigned *stack_pointer;
 	volatile unsigned int sp, ss;
@@ -28,11 +32,24 @@ public:
 
 	ID getID()const;
 
+	static LinkedList<PCB*>* allPCB;
+
 	static void wrapper();
 	static void start();
 	void waitToComplete();
-	void setLocked();
+	void setBlocked();
+	void resetBlocked();
+	void run();
+	void setFinished();
+	void unblockWaitList();
+
+	static int compareIDWrapper(PCB*, int);
+	static void resetBlockedWrapper(PCB*);
+
+	Thread* getThread();
+
 private:
+	LinkedList<PCB*>* getWaitList()const;
 	ID myID;
 	Thread *myT;
 	LinkedList<PCB*>* waitList;

@@ -9,10 +9,10 @@
 
 PCB::PCB(Thread *myThread, StackSize stack_size, Time time_slice): myT(myThread),
 processorTime(time_slice), my_status(NEW), blocked_time(0), myID(max_id++) {
-
 	#ifndef BCC_BLOCK_IGNORE
 	lock();
 	#endif
+	waitList = new LinkedList<PCB*>;
 	int sSize = stack_size / sizeof(unsigned);
 	stack_pointer = new unsigned[sSize];
 
@@ -29,6 +29,9 @@ processorTime(time_slice), my_status(NEW), blocked_time(0), myID(max_id++) {
 	sp = FP_OFF(stack_pointer + sSize);
 	ss = FP_SEG(stack_pointer + sSize);
 	//bp = FP_OFF(stack_pointer + sSize);
+	#endif
+	allPCB->push_back(this);
+	#ifndef BCC_BLOCK_IGNORE
 	unlock();
 	#endif
 
@@ -52,29 +55,92 @@ void PCB::waitToComplete(){
 
 	if(this == system32::running || this == system32::idle){
 		#ifndef BCC_BLOCK_IGNORE
-		lock();
+		unlock();
 		return;
 		#endif
 	}
 
 	if(my_status == NEW || my_status == FINISHED){
 		#ifndef BCC_BLOCK_IGNORE
-		lock();
+		unlock();
 		return;
 		#endif
 	}
 
-	system32::running->setLocked();
+	system32::running->setBlocked();
 	waitList->push_back(system32::running);
-	dispatch();
 	#ifndef BCC_BLOCK_IGNORE
 	unlock();
 	#endif
+	dispatch();
 }
 
-void PCB::setLocked(){
+void PCB::setBlocked(){
 	my_status = BLOCKED;
 }
 
+void PCB::resetBlocked(){
+	my_status = READY;
+	Scheduler::put(this);
+}
+
+void PCB::setFinished(){
+	my_status = FINISHED;
+}
+
+void PCB::start(){
+	#ifndef BCC_BLOCK_IGNORE
+	lock()
+	if(my_status == NEW){
+		my_status = READY;
+		Scheduler::put(this);
+	}
+	unlock()
+	#endif
+}
+
+void PCB::run(){
+	myT->run;
+}
+
+LinkedList<PCB*>* PCB::getWaitList()const{
+	return waitList;
+}
+
+void PCB::unblockWaitList(){
+	/*Unsynchronized function*/
+	waitList->applyAll(resetBlockedWrapper);
+}
+
+void PCB::resetBlockedWrapper(PCB* pcb){
+	pcb->resetBlocked();
+}
+
+void PCB::wrapper(){
+	system32::running->run();
+	#ifndef BCC_BLOCK_IGNORE
+	lock();
+	#endif
+	system32::running->setFinished();
+	system32::running->unblockWaitList();
+	#ifndef BCC_BLOCK_IGNORE
+	unlock();
+	#endif
+	system32::dispatch();
+}
+
+int compareIDWrapper(PCB* pcb, int _id){
+	return 1 ? pcb->getID() == _id : 0;
+}
+
+ID PCB::getID()const{
+	return myID;
+}
+
+PCB* PCB::getPCBById(ID _id){
+	return *(allPCB->findFunction(compareIDWrapper, _id));
+}
 
 volatile int PCB::max_id = 0;
+LinkedList<PCB*> PCB::allPCB = new LinkedList<PCB*>;
+

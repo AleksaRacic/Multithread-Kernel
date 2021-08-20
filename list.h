@@ -25,10 +25,8 @@ public:
 	}
 
 	void syncPrintList();
+	void applyAll(void (*func)(T));
 
-	/*
-	 * list node
-	 */
 	class LinkedListNode {
 	public:
 		LinkedListNode(T d) :
@@ -77,9 +75,6 @@ public:
 		LinkedListNode* elem;
 	};
 
-	/*
-	 * functions needed to use linked list
-	 */
 	const T& first();
 	const T& last();
 
@@ -93,6 +88,15 @@ public:
 	Iterator find(const T& e) {
 		for (Iterator it = begin(); it != end(); ++it) {
 			if (*it == e) {
+				return it;
+			}
+		}
+		return Iterator(NULL);
+	}
+
+	Iterator findFunction(int (*func)(T, int), int num){
+		for (Iterator it = begin(); it != end(); ++it) {
+			if (funct((*it, num))) {
 				return it;
 			}
 		}
@@ -249,6 +253,14 @@ void LinkedList<T>::syncPrintList() {
 	systemUnlock();
 }
 
+template<class T>
+void LinkedList<T>::applyAll(void (*func)(T)) {
+	/*Unsynchronized function*/
+	for (Iterator it = begin(); it != end(); ++it) {
+		func((*it));
+	}
+
+}
 
 
 #endif /* LIST_H_ */
