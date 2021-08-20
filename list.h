@@ -11,6 +11,8 @@
 #include "system32.h"
 #include <IOSTREAM.H>
 
+
+/*Lista cuva elemente po kopiji, promeni da cuva po referenci*/
 template<class T>
 class LinkedList {
 public:
@@ -36,12 +38,6 @@ public:
 		LinkedListNode* next, * prev;
 	};
 
-	/*
-	 * iterator to traverse through linked list
-	 *
-	 * NOTE: because of compiler or whatever, these functions for inner
-	 * class must be declared and defined here
-	 */
 	class Iterator {
 	public:
 		Iterator(LinkedListNode* e = NULL) :

@@ -12,13 +12,11 @@ idleThread::idleThread() : Thread(128,1){
 }
 
 idleThread::~idleThread() {
-	// TODO Auto-generated destructor stub
 }
 
 void idleThread::run(){
 	while(1);
 }
 
-void idleThread::start(){
 
-}
+

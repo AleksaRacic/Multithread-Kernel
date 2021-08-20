@@ -34,6 +34,8 @@ public:
 
 	static volatile int getSwitchContextReq() const;
 
+
+	PCB *running, *idle;
 private:
 	static volatile int switch_context_req;
 

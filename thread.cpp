@@ -16,3 +16,6 @@ Thread::~Thread() {
 	// TODO Auto-generated destructor stub
 }
 
+void dispatch(){
+	system32::dispatch(); //videti hoce li ovo praviti problem kasnje
+}
