@@ -7,13 +7,13 @@
 
 #include "thread.h"
 
-Thread::Thread() {
-	// TODO Auto-generated constructor stub
-
+Thread::Thread(StackSize s, Time ts) {
+	myPCB = new PCB(this, s, ts);
 }
 
 Thread::~Thread() {
-	// TODO Auto-generated destructor stub
+	waitToComplete();
+	delete myPCB;
 }
 
 void dispatch(){
@@ -22,4 +22,21 @@ void dispatch(){
 
 Thread*  Thread::getThreadById(ID id){
 	return PCB::getPCBById(id)->getThread();
+}
+
+void Thread::start(){
+	myPCB->start();
+}
+
+
+ID Thread::getRunningId(){
+	return myPCB->getRunningId();
+}
+
+void Thread::waitToComplete(){
+	myPCB->waitToComplete();
+}
+
+ID Thread::getId(){
+	return myPCB->getID();
 }

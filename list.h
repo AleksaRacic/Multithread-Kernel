@@ -64,9 +64,9 @@ public:
 		}
 		int isNULL(){
 			if (elem == NULL){
-				return true;
+				return 1;
 			}
-			return false;
+			return 0;
 		}
 
 	protected:
@@ -96,7 +96,7 @@ public:
 
 	Iterator findFunction(int (*func)(T, int), int num){
 		for (Iterator it = begin(); it != end(); ++it) {
-			if (funct((*it, num))) {
+			if (func(*it, num) == 1) {
 				return it;
 			}
 		}

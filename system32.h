@@ -9,6 +9,10 @@
 #define SYSTEM32_H_
 
 #include "PCB.h"
+#include <dos.h>
+
+#include "idleT.h"
+#include "uMainT.h"
 
 #define NULL 0
 
@@ -24,7 +28,7 @@
 
 class system32 {
 public:
-	static volatile int int_locked;
+	static volatile int int_locked; //setiti se za sta ce mi ovo
 	static void dispatch();
 	static void boot();
 	static void restore();
@@ -32,15 +36,16 @@ public:
 	system32();
 	virtual ~system32();
 
-	static volatile int getSwitchContextReq() const;
+	static int getSwitchContextReq();
 
-
-	static PCB *running, *idle;
+	static idleThread* idleT;
+	static PCB *running, *idle, *mainPCB;
 private:
 	static volatile int switch_context_req;
 
 	static void interrupt myTimer();
 	static volatile void interrupt (*oldTimer)(...);
+	static void changeContext();
 };
 
 

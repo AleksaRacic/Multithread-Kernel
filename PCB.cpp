@@ -8,12 +8,15 @@
 #include "PCB.h"
 
 PCB::PCB(Thread *myThread, StackSize stack_size, Time time_slice): myT(myThread),
-processorTime(time_slice), my_status(NEW), blocked_time(0), myID(max_id++) {
+processorTime(time_slice), my_status(CREATED), blocked_time(0), myID(max_id++) {
 	#ifndef BCC_BLOCK_IGNORE
 	lock();
 	#endif
 	waitList = new LinkedList<PCB*>;
+
+	if(stack_size > MAX_STACK_SIZE) stack_size = MAX_STACK_SIZE;
 	int sSize = stack_size / sizeof(unsigned);
+
 	stack_pointer = new unsigned[sSize];
 
 	stack_pointer[--sSize] = 0x200; //PSW
@@ -23,7 +26,7 @@ processorTime(time_slice), my_status(NEW), blocked_time(0), myID(max_id++) {
 	stack_pointer[--sSize] = FP_OFF(wrapper);
 
 	/*pri izlasku iz rutine se skidaju jos 9 registara*/
-	sSize -=9;
+	sSize -= 9;
 
 
 	sp = FP_OFF(stack_pointer + sSize);
@@ -60,7 +63,7 @@ void PCB::waitToComplete(){
 		#endif
 	}
 
-	if(my_status == NEW || my_status == FINISHED){
+	if(my_status == CREATED || my_status == FINISHED){
 		#ifndef BCC_BLOCK_IGNORE
 		unlock();
 		return;
@@ -91,7 +94,7 @@ void PCB::setFinished(){
 void PCB::start(){
 	#ifndef BCC_BLOCK_IGNORE
 	lock()
-	if(my_status == NEW){
+	if(my_status == CREATED){
 		my_status = READY;
 		Scheduler::put(this);
 	}
@@ -141,6 +144,30 @@ PCB* PCB::getPCBById(ID _id){
 	return *(allPCB->findFunction(compareIDWrapper, _id));
 }
 
-volatile int PCB::max_id = 0;
+int PCB::max_id = 0;
+
 LinkedList<PCB*> PCB::allPCB = new LinkedList<PCB*>;
+
+ID PCB::getRunningId(){
+	return system32::running->getID();
+}
+
+int PCB::decProcessorTime(){
+	if(processorTime == 0) return -1;
+	if(--time_left <= 0){
+		my_status = READY;
+		return 0;
+	}else{
+		return -1;
+	}
+}
+
+PCB::status PCB::getStatus(){
+	return my_status;
+}
+
+void PCB::resetMyTime(){
+	time_left = processorTime;
+	my_status = RUNNING;
+}
 
