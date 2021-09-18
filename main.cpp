@@ -1,24 +1,14 @@
-/*
- * main.cpp
- *
- *  Created on: Aug 18, 2021
- *      Author: OS1
- */
+#include "kernel.h"
+#include "hlpThr.h"
 
-#include "system32.h";
+void synchronizedPrintf(const char *format, ...);
 
 int main(int argc, char* argv[]){
-
-	system32::boot();
-
-	userMainThread user_thread(argc, argv);
-	user_thread.start();
-	user_thread.waitToComplete();
-
-	system32::restore();
-
-
-	//Mozda dodti kontrolu da zatvori sve niti koje se iyvrsvaju(ovo se dogadja zbog loseg koda u mainu)
-	return user_thread.ret;
+	//synchronizedPrintf("\n\n\n\n");
+	Kernel::boot();
+	uMainT* user_thread = new uMainT(argc, argv);
+	user_thread->start();
+	user_thread->waitToComplete();
+	Kernel::restore();
+	return 0;
 }
-

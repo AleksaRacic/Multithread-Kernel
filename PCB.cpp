@@ -1,44 +1,67 @@
 /*
  * PCB.cpp
  *
- *  Created on: Aug 18, 2021
+ *  Created on: Sep 15, 2021
  *      Author: OS1
  */
 
+#include "kernel.h"
 #include "PCB.h"
+#include "SCHEDULE.H"
+
+
+#include <STDIO.H>
+
+
+int PCB::max_id = 0;
+PCBList* PCB::allPCB = new PCBList();
 
 PCB::PCB(Thread *myThread, StackSize stack_size, Time time_slice): myT(myThread),
 processorTime(time_slice), my_status(CREATED), blocked_time(0), myID(max_id++) {
-	#ifndef BCC_BLOCK_IGNORE
-	lock();
-	#endif
-	waitList = new LinkedList<PCB*>;
+	systemLock();
+	waitList = new PCBList();
+	allPCB->push_back(this);
+	time_left = time_slice; //vidjeti da li ovo treba?
+	//printf("S %d\n", allPCB->size);
+	//printf("\n");
+	printf("T: %d\n", myID);
 
 	if(stack_size > MAX_STACK_SIZE) stack_size = MAX_STACK_SIZE;
 	int sSize = stack_size / sizeof(unsigned);
 
 	stack_pointer = new unsigned[sSize];
 
+	// stack : PSWI, cs, ip, ax , bx , cx , dx , es ,ds , si , di , bp
+
 	stack_pointer[--sSize] = 0x200; //PSW
 	#ifndef BCC_BLOCK_IGNORE
 
-	stack_pointer[--sSize] = FP_SEG(wrapper);
-	stack_pointer[--sSize] = FP_OFF(wrapper);
+	stack_pointer[--sSize] = FP_SEG(&(PCB::wrapper));
+	stack_pointer[--sSize] = FP_OFF(&(PCB::wrapper));
 
 	/*pri izlasku iz rutine se skidaju jos 9 registara*/
 	sSize -= 9;
 
-
 	sp = FP_OFF(stack_pointer + sSize);
 	ss = FP_SEG(stack_pointer + sSize);
-	//bp = FP_OFF(stack_pointer + sSize);
+	bp = sp;
 	#endif
-	allPCB->push_back(this);
+
 	#ifndef BCC_BLOCK_IGNORE
-	unlock();
+	systemUnlock();
 	#endif
+}
 
+PCB::PCB() : myT(NULL), processorTime(0), my_status(CREATED), blocked_time(0), myID(max_id++) {
+	bp = 0;
+	ss = 0;
+	sp = 0;
 
+	//allPCB->push_back(this); videti da li ovo ima smisla
+	resetMyTime();
+	time_left = 0;
+	int sSize = defaultStackSize / sizeof(unsigned);
+	stack_pointer = new unsigned[sSize];
 }
 
 PCB::~PCB() {
@@ -48,7 +71,13 @@ PCB::~PCB() {
 	delete[] stack_pointer;
 	unlock();
 	#endif
+	//dodati da se izbaci pcb iz liste
+	//dodati da myPCB od threda bude NULL
 
+}
+
+void PCB::setBlocked()volatile{
+	my_status = BLOCKED; //ovdje puca
 }
 
 void PCB::waitToComplete(){
@@ -56,7 +85,7 @@ void PCB::waitToComplete(){
 	lock();
 	#endif
 
-	if(this == system32::running || this == system32::idle){
+	if(this == Kernel::running){ //dodati || this == idle
 		#ifndef BCC_BLOCK_IGNORE
 		unlock();
 		return;
@@ -70,104 +99,104 @@ void PCB::waitToComplete(){
 		#endif
 	}
 
-	system32::running->setBlocked();
-	waitList->push_back(system32::running);
+	Kernel::running->setBlocked();
+	waitList->push((PCB*)Kernel::running); //vidjeti zasto push_back ne radi?
 	#ifndef BCC_BLOCK_IGNORE
 	unlock();
 	#endif
 	dispatch();
 }
 
-void PCB::setBlocked(){
-	my_status = BLOCKED;
-}
 
 void PCB::resetBlocked(){
+	printf("RB %d, by %d", myID, Kernel::running->getID());
 	my_status = READY;
 	Scheduler::put(this);
 }
 
-void PCB::setFinished(){
+void PCB::setFinished()volatile{
 	my_status = FINISHED;
 }
 
 void PCB::start(){
 	#ifndef BCC_BLOCK_IGNORE
 	lock()
+	#endif
 	if(my_status == CREATED){
 		my_status = READY;
 		Scheduler::put(this);
 	}
+	#ifndef BCC_BLOCK_IGNORE
 	unlock()
 	#endif
 }
 
-void PCB::run(){
-	myT->run;
+void PCB::run()volatile{
+	myT->run();
 }
 
-LinkedList<PCB*>* PCB::getWaitList()const{
+PCBList* PCB::getWaitList(){
 	return waitList;
 }
 
-void PCB::unblockWaitList(){
+void PCB::unblockWaitList()volatile{
 	/*Unsynchronized function*/
 	waitList->applyAll(resetBlockedWrapper);
 }
+
 
 void PCB::resetBlockedWrapper(PCB* pcb){
 	pcb->resetBlocked();
 }
 
 void PCB::wrapper(){
-	system32::running->run();
+	Kernel::running->run();
 	#ifndef BCC_BLOCK_IGNORE
-	lock();
+	lock(); //videti koji unblock ide ovde
 	#endif
-	system32::running->setFinished();
-	system32::running->unblockWaitList();
+	Kernel::running->setFinished();
+	Kernel::running->unblockWaitList();
 	#ifndef BCC_BLOCK_IGNORE
 	unlock();
 	#endif
-	system32::dispatch();
+	Kernel::dispatch();
 }
 
-int compareIDWrapper(PCB* pcb, int _id){
-	return 1 ? pcb->getID() == _id : 0;
-}
 
-ID PCB::getID()const{
+ID PCB::getID()volatile{
 	return myID;
 }
 
 PCB* PCB::getPCBById(ID _id){
-	return *(allPCB->findFunction(compareIDWrapper, _id));
+	return allPCB->findID(_id);
+
 }
 
-int PCB::max_id = 0;
 
-LinkedList<PCB*> PCB::allPCB = new LinkedList<PCB*>;
 
 ID PCB::getRunningId(){
-	return system32::running->getID();
+	return ((PCB*)Kernel::running)->getID();
 }
 
-int PCB::decProcessorTime(){
-	if(processorTime == 0) return -1;
+int PCB::decProcessorTime()volatile{
+	if(processorTime == 0) return 0;
 	if(--time_left <= 0){
-		my_status = READY;
-		return 0;
+		my_status = READY; // ovo nije dobro, ja mislim
+		return 1;
 	}else{
-		return -1;
+		return 0;
 	}
 }
 
-PCB::status PCB::getStatus(){
+Status PCB::getStatus()volatile{
 	return my_status;
 }
 
-void PCB::resetMyTime(){
+void PCB::resetMyTime()volatile{
 	time_left = processorTime;
 	my_status = RUNNING;
 }
 
+Thread* PCB::getThread(){
+	return myT;
+}

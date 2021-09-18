@@ -7,7 +7,7 @@
 
 #include <STDIO.H>
 #include <STDARG.H>
-#include "system32.h"
+#include "kernel.h"
 
 int synchronizedPrintf(const char *format, ...){
 	va_list args;
@@ -17,7 +17,7 @@ int synchronizedPrintf(const char *format, ...){
 	va_start(args, format);
 	int res = vprintf(format, args);
 	va_end(args);
-
+	fflush(stdout);
 	systemUnlock();
 
 	return res;

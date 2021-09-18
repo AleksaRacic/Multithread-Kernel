@@ -1,14 +1,12 @@
 /*
  * thread.h
  *
- *  Created on: Aug 18, 2021
+ *  Created on: Sep 15, 2021
  *      Author: OS1
  */
 
 #ifndef THREAD_H_
 #define THREAD_H_
-
-#include "system32.h"
 
 typedef unsigned long StackSize;
 const StackSize defaultStackSize = 4096;
@@ -16,8 +14,9 @@ typedef unsigned int Time; // time, x 55ms
 const Time defaultTimeSlice = 2; // default = 2*55ms
 typedef int ID;
 
-
-class PCB; // Kernel's implementation of a user's thread
+#ifndef PCB_H_
+class PCB;
+#endif
 
 class Thread {
 public:
@@ -30,12 +29,14 @@ public:
 
 protected:
 	friend class PCB;
+	friend class Kernel;
 	Thread (StackSize stackSize = defaultStackSize, Time timeSlice =
 	defaultTimeSlice);
 	virtual void run() {}
+	PCB* myPCB;
 private:
-PCB* myPCB;
 };
+
 void dispatch ();
 
 #endif /* THREAD_H_ */

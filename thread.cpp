@@ -1,11 +1,12 @@
 /*
  * thread.cpp
  *
- *  Created on: Aug 18, 2021
+ *  Created on: Sep 15, 2021
  *      Author: OS1
  */
 
-#include "thread.h"
+#include "PCB.h"
+#include "kernel.h"
 
 Thread::Thread(StackSize s, Time ts) {
 	myPCB = new PCB(this, s, ts);
@@ -17,7 +18,7 @@ Thread::~Thread() {
 }
 
 void dispatch(){
-	system32::dispatch(); //videti hoce li ovo praviti problem kasnje
+	Kernel::dispatch(); //videti hoce li ovo praviti problem kasnje
 }
 
 Thread*  Thread::getThreadById(ID id){
@@ -30,7 +31,7 @@ void Thread::start(){
 
 
 ID Thread::getRunningId(){
-	return myPCB->getRunningId();
+	return PCB::getRunningId();
 }
 
 void Thread::waitToComplete(){
