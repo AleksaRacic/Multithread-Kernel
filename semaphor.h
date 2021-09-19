@@ -5,10 +5,10 @@
  *      Author: OS1
  */
 
-#ifndef SEMAPHORE_H_
-#define SEMAPHORE_H_
+#ifndef SEMAPHOR_H_
+#define SEMAPHOR_H_
 
-#include "KerlSem.h"
+#include "KerSem.h"
 
 typedef unsigned int Time;
 
@@ -24,4 +24,4 @@ class Semaphore {
 		KernelSem* myImpl;
 };
 
-#endif /* SEMAPHORE_H_ */
+#endif /* SEMAPHOR_H_ */

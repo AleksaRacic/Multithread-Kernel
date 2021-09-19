@@ -8,8 +8,9 @@
 #include "kernel.h"
 #include "SCHEDULE.H"
 #include "hlpThr.h"
+#include "KerSem.h"
 
-#include <STDIO.H>
+#include "debug.h"
 
 volatile void interrupt (*Kernel::oldTimer)(...) = NULL;
 
@@ -38,22 +39,20 @@ void Kernel::dispatch(){
 
 void interrupt Kernel::myTimer(...){
 	int time_left;
-	//printf("_%d_%d_%d//", switch_context_req_disp, switch_context_req_timer, running->getID());
 	if(!switch_context_req_disp){
 		tick();
 		(*oldTimer)();
 		switch_context_req_timer = running->decProcessorTime();
-		//printf(" %d_%d ", running->time_left, switch_context_req_timer);
-		//dodati semafore
+		KernelSem::decAllSem();
 	}
 
 	if(!int_locked && (switch_context_req_timer || switch_context_req_disp)){
-		//printf("_%d_%d ", switch_context_req_disp, switch_context_req_timer);
-		//printf("K d\n");
 		switch_context_req_disp = 0;
 		switch_context_req_timer = 0;
 		PCB *next_thread = NULL;
+		#ifdef KERNELDEBUG
 		printf("_%d->",running->getID());
+		#endif
 		if((running->getStatus() == READY || running->getStatus() == RUNNING) && running != idle)
 			Scheduler::put((PCB*)running);
 
@@ -73,7 +72,9 @@ void interrupt Kernel::myTimer(...){
 		running->bp = tbp;
 
 		running = next_thread;
+		#ifdef KERNELDEBUG
 		printf("%d\n",running->getID());
+		#endif
 		running->resetMyTime();
 
 		tsp = running->sp;
@@ -112,10 +113,10 @@ void Kernel::boot(){
 
 void Kernel::restore(){
 	#ifndef BCC_BLOCK_IGNORE
-		lock(); //zaustavljamo sve interrupte dok se sistem pali
-		//setvect(0x08, oldTimer);
+		lock();
+		setvect(0x08, oldTimer);
 	#endif
-		//delete idleT;
+		delete idleT;
 		delete mainPCB;
 	#ifndef BCC_BLOCK_IGNORE
 		unlock(); //zaustavljamo sve interrupte dok se sistem pali

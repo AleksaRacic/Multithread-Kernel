@@ -5,7 +5,7 @@
  *      Author: OS1
  */
 
-#include "semaphore.h"
+#include "semaphor.h"
 
 Semaphore::Semaphore(int init) {
 	myImpl = new KernelSem(init);

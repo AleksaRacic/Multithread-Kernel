@@ -1,16 +1,7 @@
-/*
- * list.h
- *
- *  Created on: Aug 19, 2021
- *      Author: OS1
- */
-
 #ifndef LIST_H_
 #define LIST_H_
 
-#include "system32.h"
-#include <IOSTREAM.H>
-
+#define NULL 0
 
 /*Lista cuva elemente po kopiji, promeni da cuva po referenci*/
 template<class T>
@@ -24,8 +15,7 @@ public:
 		clear();
 	}
 
-	void syncPrintList();
-	void applyAll(void (*func)(T));
+	void applyAll(int (*func)(T));
 
 	class LinkedListNode {
 	public:
@@ -94,26 +84,13 @@ public:
 		return Iterator(NULL);
 	}
 
-	Iterator findFunction(int (*func)(T, int), int num){
-		for (Iterator it = begin(); it != end(); ++it) {
-			if (func(*it, num) == 1) {
-				return it;
-			}
-		}
-		return Iterator(NULL);
-	}
 
 	int isEmpty();
 	int getSize();
 
 	void clear();
-	void add(const T& e);
-	void push_back(const T& e) {
-		add(e);
-	}
-	void push(const T& e){
-		insert_before(begin(), e);
-	}
+	void push_back(const T& e);
+	void push(const T& e);
 
 	void remove(const T& e) {
 		LinkedListNode* it;
@@ -196,7 +173,7 @@ private:
 };
 
 template<class T>
-void LinkedList<T>::add(const T& e) {
+void LinkedList<T>::push_back(const T& e) {
 	LinkedListNode* newE = new LinkedListNode(e);
 	if (isEmpty()) {
 		head = newE;
@@ -208,6 +185,20 @@ void LinkedList<T>::add(const T& e) {
 
 	tail = newE;
 	size++;
+}
+
+template<class T>
+void LinkedList<T>::push(const T& e) {
+	LinkedListNode* newE = new LinkedListNode(e);
+		if(isEmpty()){
+			tail = newE;
+		}
+		else{
+			head->prev = newE;
+			newE->next = head;
+		}
+		head = newE;
+		size++;
 }
 
 template<class T>
@@ -240,24 +231,14 @@ int LinkedList<T>::getSize() {
 
 template<class T>
 int LinkedList<T>::isEmpty() {
-	return (head == NULL) ? 1 : -1;
+	return size == 0;
 }
 
 template<class T>
-void LinkedList<T>::syncPrintList() {
-	systemLock();
-	for (Iterator it = begin(); it != end(); ++it) {
-		cout << *it << " ";
-	}
-	cout << endl;
-	systemUnlock();
-}
-
-template<class T>
-void LinkedList<T>::applyAll(void (*func)(T)) {
+void LinkedList<T>::applyAll(int (*func)(T)) {
 	/*Unsynchronized function*/
 	for (Iterator it = begin(); it != end(); ++it) {
-		func((*it));
+		if(func((*it))) break;
 	}
 
 }
