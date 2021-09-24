@@ -13,6 +13,9 @@
 
 #include "list.h"
 #include "thread.h"
+#include "semaphor.h"
+
+
 
 typedef enum {CREATED, READY, BLOCKED, RUNNING, FINISHED} Status; //mozda dodati i status idle
 
@@ -22,11 +25,10 @@ public:
 	static ID max_id;
 
 	PCB(Thread*, StackSize, Time);
-	PCB();
 
 	virtual ~PCB();
 	Status my_status;
-
+	StackSize stack_size;
 	static PCB* getPCBById(int);
 
 	static int getRunningId();
@@ -65,9 +67,23 @@ public:
 	void resetMyTime()volatile;
 
 	PCBList* getWaitList();
+
+	static void mainInstance();
+
 	friend class Kernel;
 	volatile int unblocked_by_PCB;
+
+	void setReady();
+
+	int clone(PCB*); //treba vratiti 1 ako uspesno klonira, 0 ako ne
+	int childreen_no;
+	Semaphore* getSemaphore() volatile;
+	void deleteSem() volatile;
+	void signalParent() volatile;
 private:
+	Semaphore* sem;
+	PCB* myParent;
+	PCB();
 	static volatile PCB* retPCB;
 	static volatile int findId;
 	int myID;

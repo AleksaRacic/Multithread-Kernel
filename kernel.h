@@ -8,7 +8,9 @@
 #ifndef KERNEL_H_
 #define KERNEL_H_
 
-#include "PCB.h"
+//#include "PCB.h"
+class PCB;
+class Thread;
 
 #include <dos.h>
 
@@ -22,7 +24,8 @@
 /*Softversko maskiranje prekida*/
 #define systemLock() {Kernel::int_locked = 1;}
 /*Ako se u medjuvremenu dogodi zahtev za obradu, obraditi ga, a ne odbaciti*/
-#define systemUnlock() {Kernel::int_locked = 0; if(Kernel::switch_context_req_timer) Kernel::dispatch();}
+#define systemUnlock() {Kernel::int_locked = 0;\
+if(Kernel::switch_context_req_timer||Kernel::switch_context_req_disp) Kernel::dispatch();}
 
 //
 void tick();

@@ -9,6 +9,7 @@
 #include "SCHEDULE.H"
 #include "hlpThr.h"
 #include "KerSem.h"
+#include "PCB.h"
 
 #include "debug.h"
 
@@ -30,7 +31,9 @@ void Kernel::dispatch(){
 	lock();
 #endif
 	switch_context_req_disp = 1;
-	myTimer();
+	if(!int_locked){//da se ne bi zvao tajmer ako se pozove ispatch tokom locka
+		myTimer();
+	}
 #ifndef BCC_BLOCK_IGNORE
 	unlock();
 #endif
@@ -39,7 +42,7 @@ void Kernel::dispatch(){
 
 void interrupt Kernel::myTimer(...){
 	int time_left;
-	if(!switch_context_req_disp){
+	if(!switch_context_req_disp || (int_locked && switch_context_req_disp)){
 		tick();
 		(*oldTimer)();
 		switch_context_req_timer = running->decProcessorTime();
@@ -51,7 +54,7 @@ void interrupt Kernel::myTimer(...){
 		switch_context_req_timer = 0;
 		PCB *next_thread = NULL;
 		#ifdef KERNELDEBUG
-		printf("_%d->",running->getID());
+		synchronizedPrintf("_%d->",running->getID());
 		#endif
 		if((running->getStatus() == READY || running->getStatus() == RUNNING) && running != idle)
 			Scheduler::put((PCB*)running);
@@ -59,21 +62,26 @@ void interrupt Kernel::myTimer(...){
 		if((next_thread = Scheduler::get())== NULL)
 			next_thread = (PCB*) idle;
 
+		if(running->getStatus() == FINISHED){
+			delete running;
+		}else{
 		#ifndef BCC_BLOCK_IGNORE
 		asm{
 			mov tsp, sp
 			mov tss, ss
 			mov tbp, bp
-		}
+			}
 		#endif
 
 		running->sp = tsp;
 		running->ss = tss;
 		running->bp = tbp;
+		}
+
 
 		running = next_thread;
 		#ifdef KERNELDEBUG
-		printf("%d\n",running->getID());
+		synchronizedPrintf("%d\n",running->getID());
 		#endif
 		running->resetMyTime();
 
@@ -92,23 +100,23 @@ void interrupt Kernel::myTimer(...){
 }
 
 void Kernel::boot(){
-#ifndef BCC_BLOCK_IGNORE
-	lock(); //zaustavljamo sve interrupte dok se sistem pali
+	#ifndef BCC_BLOCK_IGNORE
+	lock();
 	oldTimer = getvect(0x08);
 	setvect(0x08, myTimer);
-#endif
+	#endif
 
-	mainPCB = new PCB(); //videti da li ce zbog ovoga pucati(ne bi trebalo jer se ne poziva run)
+	PCB::mainInstance();
 	running = mainPCB;
 
 	idleT = new idleThread();
 	idle = idleT->myPCB;
+
 	//dodati semafore i ostalo
 
-#ifndef BCC_BLOCK_IGNORE
-
+	#ifndef BCC_BLOCK_IGNORE
 	unlock();
-#endif
+	#endif
 }
 
 void Kernel::restore(){
@@ -119,7 +127,7 @@ void Kernel::restore(){
 		delete idleT;
 		delete mainPCB;
 	#ifndef BCC_BLOCK_IGNORE
-		unlock(); //zaustavljamo sve interrupte dok se sistem pali
+		unlock();
 	#endif
 }
 

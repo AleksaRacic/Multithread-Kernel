@@ -6,6 +6,7 @@ public:
 	virtual ~uMainT();
 	volatile int ret;
 	void run();
+	Thread* clone()const;
 private:
 	int argc;
 	char** argv;
@@ -18,4 +19,5 @@ public:
 	volatile int running;
 	void run();
 	void start();
+	Thread* clone()const;
 };

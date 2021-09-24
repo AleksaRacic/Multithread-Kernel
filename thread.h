@@ -24,15 +24,22 @@ public:
 	void waitToComplete();
 	virtual ~Thread();
 	ID getId();
+
 	static ID getRunningId();
 	static Thread * getThreadById(ID id);
+	static ID fork();
+	static void exit();
+	static void waitForForkChildren();
 
 protected:
 	friend class PCB;
 	friend class Kernel;
-	Thread (StackSize stackSize = defaultStackSize, Time timeSlice =
-	defaultTimeSlice);
-	virtual void run() {}
+
+	Thread (StackSize stackSize = defaultStackSize, Time timeSlice = defaultTimeSlice);
+
+	virtual void run(){}
+	virtual Thread* clone() const; //ovo je bilo const
+
 	PCB* myPCB;
 private:
 };

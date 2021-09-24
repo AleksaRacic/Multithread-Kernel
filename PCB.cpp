@@ -5,11 +5,12 @@
  *      Author: OS1
  */
 
+#include <iostream.h>
 #include "kernel.h"
 #include "PCB.h"
 #include "SCHEDULE.H"
 #include "debug.h"
-
+#include <dos.h>
 
 
 int PCB::max_id = 0;
@@ -18,20 +19,25 @@ volatile PCB* PCB::retPCB = NULL;
 volatile int PCB::findId = -1;
 
 PCB::PCB(Thread *myThread, StackSize stack_size, Time time_slice): myT(myThread),
-processorTime(time_slice), my_status(CREATED), blocked_time(0), myID(max_id++) {
-	systemLock();
+processorTime(time_slice), my_status(CREATED), blocked_time(0), myID(max_id++), myParent(NULL), stack_size(stack_size) {
+
 	waitList = new PCBList();
 	allPCB->push_back(this);
-	time_left = time_slice; //vidjeti da li ovo treba?
+	time_left = time_slice;
+
+	myParent = NULL;
+	sem = NULL;
 
 	#ifdef PCBCREATEDEBUG
-	printf("T: %d\n", myID); //promeniti na synchrnizedPrintf
+	synchronizedPrintf("T: %d\n", myID); //promeniti na synchrnizedPrintf
 	#endif
+
 
 	if(stack_size > MAX_STACK_SIZE) stack_size = MAX_STACK_SIZE; //dodaj uslov i za min stack
 	int sSize = stack_size / sizeof(unsigned);
 
 	stack_pointer = new unsigned[sSize];
+
 	if(stack_pointer != NULL){
 		stack_pointer[--sSize] = 0x200; //PSW
 			#ifndef BCC_BLOCK_IGNORE
@@ -48,18 +54,16 @@ processorTime(time_slice), my_status(CREATED), blocked_time(0), myID(max_id++) {
 			ss = FP_SEG(stack_pointer + sSize);
 			#endif
 			bp = sp;
+			//fork
+			childreen_no = 0;
 	}else{
-		printf("MEMFULL: stack"); //ovo doraditi i istestirati
+		synchronizedPrintf("MEMFULL: stack"); //ovo doraditi i istestirati
 	}
-
-	#ifndef BCC_BLOCK_IGNORE
-	systemUnlock();
-	#endif
 }
 
 //dodati static konstruktor za main
 
-PCB::PCB() : myT(NULL), processorTime(0), my_status(CREATED), blocked_time(0), myID(max_id++) {
+PCB::PCB() : myT(NULL), processorTime(0), my_status(CREATED), blocked_time(0), myID(max_id++), myParent(NULL) {
 	bp = 0;
 	ss = 0;
 	sp = 0;
@@ -67,68 +71,58 @@ PCB::PCB() : myT(NULL), processorTime(0), my_status(CREATED), blocked_time(0), m
 	resetMyTime();
 	time_left = 0;
 	stack_pointer = NULL;
-	int sSize = defaultStackSize / sizeof(unsigned);
-	stack_pointer = new unsigned[sSize]; //ovo je suvisno
+}
+
+void PCB::mainInstance(){
+	if(Kernel::mainPCB == NULL){
+		Kernel::mainPCB = new PCB();
+	}
 }
 
 PCB::~PCB() {
 	waitToComplete();
-	#ifndef BCC_BLOCK_IGNORE
 	systemLock();
-	#endif
-	delete[] stack_pointer;
+	deleteSem();
 	allPCB->remove(this);
+	delete[] stack_pointer;
 	myT->myPCB = NULL;
-	#ifndef BCC_BLOCK_IGNORE
 	systemUnlock();
-	#endif
-
 }
 
 void PCB::waitToComplete(){
-	#ifndef BCC_BLOCK_IGNORE
-	lock();
-	#endif
-
+	systemLock();
 	if(this == Kernel::running || this == Kernel::idle){
-		#ifndef BCC_BLOCK_IGNORE
-		unlock();
+		systemUnlock();
 		return;
-		#endif
 	}
 
 	if(my_status == CREATED || my_status == FINISHED){
-		#ifndef BCC_BLOCK_IGNORE
-		unlock();
+		systemUnlock();
 		return;
-		#endif
 	}
 
 	Kernel::running->setBlocked(0);
 	waitList->push((PCB*)Kernel::running);
-	#ifndef BCC_BLOCK_IGNORE
-	unlock();
-	#endif
+	systemUnlock();
 	dispatch();
 }
 
-void PCB::setFinished()volatile{
+void PCB::setFinished() volatile {
 	my_status = FINISHED;
+	unblockWaitList();
+	signalParent();
 }
 
 void PCB::start(){
-	#ifndef BCC_BLOCK_IGNORE
-	lock()
-	#endif
 	if(my_status == CREATED){
-		my_status = READY;
-		Scheduler::put(this);
+		setReady();
 	}
-	#ifndef BCC_BLOCK_IGNORE
-	unlock()
-	#endif
 }
 
+void PCB::setReady(){
+	my_status = READY;
+	Scheduler::put(this);
+}
 void PCB::run()volatile{
 	myT->run();
 }
@@ -137,15 +131,14 @@ PCBList* PCB::getWaitList(){
 	return waitList;
 }
 
-void PCB::unblockWaitList()volatile{
-	/*Unsynchronized function*/
+void PCB::unblockWaitList() volatile {
 	waitList->applyAll(resetBlockedWrapper);
 }
 
 
 int PCB::resetBlockedWrapper(PCB* pcb){
 	#ifdef UNBLOCKEDDEBUG
-	printf("PCB fin: ");
+	synchronizedPrintf("PCB fin: ");
 	#endif
 	pcb->resetBlocked();
 	return 0;
@@ -160,14 +153,9 @@ int PCB::compareIDWrapper(PCB* pcb){
 }
 void PCB::wrapper(){
 	Kernel::running->run();
-	#ifndef BCC_BLOCK_IGNORE
-	lock(); //videti koji unblock ide ovde
-	#endif
+	systemLock();
 	Kernel::running->setFinished();
-	Kernel::running->unblockWaitList();
-	#ifndef BCC_BLOCK_IGNORE
-	unlock();
-	#endif
+	systemUnlock();
 	Kernel::dispatch();
 }
 
@@ -193,7 +181,7 @@ ID PCB::getRunningId(){
 
 void PCB::resetBlocked() volatile {
 	#ifdef UNBLOCKEDDEBUG
-	printf("RB %d, by %d\n ", myID, Kernel::running->getID());
+	synchronizedPrintf("RB %d, by %d\n ", myID, Kernel::running->getID());
 	#endif
 	my_status = READY;
 	Scheduler::put((PCB*)this);
@@ -214,7 +202,7 @@ int PCB::decBlockedTime()volatile{
 	if(--blocked_time <= 0){
 		unblocked_by_PCB = 0;
 		#ifdef UNBLOCKEDDEBUG
-		printf("Sem t: ");
+		synchronizedPrintf("Sem t: ");
 		#endif
 		resetBlocked();
 		return 1;
@@ -229,7 +217,6 @@ void PCB::setBlocked(Time t = 0)volatile{
 }
 
 
-
 Status PCB::getStatus()volatile{
 	return my_status;
 }
@@ -241,4 +228,90 @@ void PCB::resetMyTime()volatile{
 
 Thread* PCB::getThread(){
 	return myT;
+}
+
+unsigned int parentSS, parentSP, parentBP, childSeg, childOff, childSP, childSS, childBP;
+char *parent_stack_top, *child_stack_top;
+unsigned sSize, index;
+
+int PCB::clone(PCB* parentPCB){
+	parentSS = _SS;
+	parentSP = _SP;
+	parentBP = _BP;
+	parent_stack_top = (char*) MK_FP(parentSS, parentBP); //gadjamo bp, sve posle nas ne zanima
+	//sSize = parentPCB->stack_size/sizeof(unsigned); //ovo mozda cuvati
+	//if((int)stack_top - (int)parentPCB->stack_pointer + 12 > stack_size){
+		//return -1;
+	//}
+
+	myParent = parentPCB;
+	//(parentPCB->stack_size - stack_size)/2
+	memcpy(stack_pointer, parentPCB->stack_pointer, stack_size); //dodati slucaj kada velicine steka nisu jednake
+
+	child_stack_top = (char*)stack_pointer + (parent_stack_top - (char*)parentPCB->stack_pointer);
+
+	_SS = FP_SEG(child_stack_top);
+
+	_SP = FP_OFF(child_stack_top);
+
+
+	asm{
+		pop bp
+		pop ax
+		mov childOff, ax
+		pop ax
+		mov childSeg, ax
+	}
+
+	asm{
+			pushf
+			mov ax,childSeg
+			push ax
+			mov ax,childOff
+			push ax
+			mov ax, 0 //ret value
+
+			push ax
+			push bx
+			push cx
+			push dx
+			push es
+			push ds
+			push si
+			push di
+			push bp
+			}
+	childSP = _SP;
+	childBP = _SP;
+	childSS = _SS;
+
+	_SS = parentSS;
+	_SP = parentSP;
+	_BP = parentBP;
+
+	ss = childSS;
+	sp = childSP;
+	bp = childBP;
+
+	return 0;
+}
+
+Semaphore* PCB::getSemaphore() volatile {
+	if(sem == NULL){
+		sem =  new Semaphore(0);
+	}
+	return sem;
+}
+
+void PCB::deleteSem() volatile {
+	if(sem){
+		delete sem;
+		sem = NULL;
+	}
+}
+
+void PCB::signalParent() volatile {
+	if(myParent && myParent->sem){
+		myParent->sem->signal();
+	}
 }

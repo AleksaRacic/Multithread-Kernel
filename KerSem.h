@@ -8,10 +8,10 @@
 #ifndef KERSEM_H_
 #define KERSEM_H_
 
+class PCB;
 #define SemList LinkedList<KernelSem*>
+#define PCBList LinkedList<PCB*>
 
-#include "SCHEDULE.H"
-#include "PCB.h"
 #include "list.h"
 
 typedef unsigned int Time; // time, x 55ms

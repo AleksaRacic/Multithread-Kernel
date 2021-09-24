@@ -5,11 +5,13 @@
  *      Author: OS1
  */
 
+
 #include "KerSem.h"
+#include "PCB.h"
 #include "kernel.h"
+#include "SCHEDULE.H"
 #include "debug.h"
 
-extern int synchronizedPrintf(const char *format,...);
 
 SemList* KernelSem::allSem = new SemList();
 
@@ -28,6 +30,7 @@ int KernelSem::block(Time maxTimeToWait){
 	Kernel::running->setBlocked(maxTimeToWait);
 	blockedPCB->push_back((PCB*)Kernel::running);
 	//Videti da li treba informacija o tome na kojem semaforu je blokiran pcb
+	systemUnlock();
 	dispatch();
 	return Kernel::running->unblocked_by_PCB;
 }
@@ -37,14 +40,14 @@ void KernelSem::unblock(){
 	blockedPCB->remove(pcb);  //spojiti ovo u jednu funnkciju unutar liste
 	pcb->unblocked_by_PCB = 1;
 	#ifdef UNBLOCKEDDEBUG
-	printf("Sem pcb: ");
+	synchronizedPrintf("Sem pcb: ");
 	#endif
 	pcb->resetBlocked();
 }
 
 int KernelSem::wait(Time maxTimeToWait) {
 	if(value-- <= 0) return this->block(maxTimeToWait);
-	return 0;
+	return 2; //Vrednost ako se ne blokira
 }
 
 void KernelSem::signal() {
@@ -71,5 +74,6 @@ int KernelSem::decAllWrapper(KernelSem* KS){
 }
 
 void KernelSem::decAllSem(){
+	/*Poziva kernel u prekidnoj rutini, ne treba lock*/
 	allSem->applyAll(decAllWrapper);
 }

@@ -12,6 +12,10 @@ void uMainT::run() {
 	ret = userMain(argc, argv);
 }
 
+Thread* uMainT::clone()const{
+	return 0;
+}
+
 idleThread::idleThread() : Thread(512,1){
 	running = 1;
 }
@@ -24,3 +28,6 @@ void idleThread::run(){
 	while(running);
 }
 
+Thread* idleThread::clone() const {
+	return 0;
+}
