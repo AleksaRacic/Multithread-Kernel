@@ -13,7 +13,7 @@ void uMainT::run() {
 }
 
 Thread* uMainT::clone()const{
-	return 0;
+	return new uMainT(argc, argv);
 }
 
 idleThread::idleThread() : Thread(512,1){
