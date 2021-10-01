@@ -1,4 +1,4 @@
-# ETF_OS1_Projekat
+# Projekat iz predmeta OS1
 
 Izrada školskog kernela koji podržava rad sa nitima.
 
