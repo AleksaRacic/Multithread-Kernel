@@ -1,10 +1,3 @@
-/*
- * kernel.cpp
- *
- *  Created on: Sep 15, 2021
- *      Author: OS1
- */
-
 #include "kernel.h"
 #include "SCHEDULE.H"
 #include "hlpThr.h"
@@ -31,7 +24,7 @@ void Kernel::dispatch(){
 	lock();
 #endif
 	switch_context_req_disp = 1;
-	if(!int_locked){//da se ne bi zvao tajmer ako se pozove ispatch tokom locka
+	if(!int_locked){
 		myTimer();
 	}
 #ifndef BCC_BLOCK_IGNORE
@@ -80,14 +73,15 @@ void interrupt Kernel::myTimer(...){
 
 
 		running = next_thread;
-		#ifdef KERNELDEBUG
-		synchronizedPrintf("%d\n",running->getID());
-		#endif
 		running->resetMyTime();
 
 		tsp = running->sp;
 		tss = running->ss;
 		tbp = running->bp;
+
+		#ifdef KERNELDEBUG
+		synchronizedPrintf("%d\n",running->getID());
+		#endif
 
 		#ifndef BCC_BLOCK_IGNORE
 		asm{
@@ -111,8 +105,6 @@ void Kernel::boot(){
 
 	idleT = new idleThread();
 	idle = idleT->myPCB;
-
-	//dodati semafore i ostalo
 
 	#ifndef BCC_BLOCK_IGNORE
 	unlock();

@@ -1,20 +1,12 @@
-/*
- * IVTEntry.cpp
- *
- *  Created on: Sep 20, 2021
- *      Author: OS1
- */
-
-
-#include "KernelEv.h"
 #include <dos.h>
+#include "KernelEv.h"
 #include "IVTEntry.h"
 #include "kernel.h"
 
 
-IVTEntry* IVTEntries[256]; // global array of IVT entries (256) //ovo prebaciti u static
+IVTEntry* IVTEntries[256];
 
-IVTEntry::IVTEntry(IVTNo ivtNo, pInterrupt interruptRoutine) : entryNum(ivtNo), kernelEvent(NULL) {//zastro kernelEv(null)
+IVTEntry::IVTEntry(IVTNo ivtNo, pInterrupt interruptRoutine) : entryNum(ivtNo), kernelEvent(NULL) {
 	IVTEntries[ivtNo] = this;
 	#ifndef BCC_BLOCK_IGNORE
 	lock();

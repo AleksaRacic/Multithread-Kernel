@@ -1,10 +1,3 @@
-/*
- * semaphore.cpp
- *
- *  Created on: Aug 18, 2021
- *      Author: OS1
- */
-
 #include "semaphor.h"
 #include "kernel.h"
 
@@ -32,5 +25,5 @@ void Semaphore::signal() {
 }
 
 int Semaphore::val() const {
-	return myImpl->val(); //bolje preneti preko globalnog containera??
+	return myImpl->val();
 }

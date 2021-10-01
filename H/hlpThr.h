@@ -1,3 +1,6 @@
+#ifndef HLPTHR_H_
+#define HLPTHR_H_
+
 #include "thread.h"
 
 class uMainT: public Thread {
@@ -21,3 +24,4 @@ public:
 	void start();
 	Thread* clone()const;
 };
+#endif 

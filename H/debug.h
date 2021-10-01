@@ -1,3 +1,5 @@
+/*Uncomment for debug print*/
+
 //#define KERNELDEBUG
 //#define PCBCREATEDEBUG
 //#define UNBLOCKEDDEBUG
@@ -5,4 +7,3 @@
 
 int synchronizedPrintf(const char *format, ...);
 
-//void writeToFile(); //ovo kasnije

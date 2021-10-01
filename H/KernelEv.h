@@ -1,10 +1,3 @@
-/*
- * KernelEv.h
- *
- *  Created on: Sep 20, 2021
- *      Author: OS1
- */
-
 #ifndef KERNELEV_H_
 #define KERNELEV_H_
 
@@ -19,8 +12,8 @@ public:
 	void wait();
 	void signal();
 private:
-	int entryNum; // number of entry linked with this event
-	PCB* myPCB; // thread that created object, only this thread can be blocked
+	int entryNum;
+	PCB* myPCB;
 };
 
 #endif /* KERNELEV_H_ */

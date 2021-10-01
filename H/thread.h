@@ -1,10 +1,3 @@
-/*
- * thread.h
- *
- *  Created on: Sep 15, 2021
- *      Author: OS1
- */
-
 #ifndef THREAD_H_
 #define THREAD_H_
 
@@ -24,22 +17,17 @@ public:
 	void waitToComplete();
 	virtual ~Thread();
 	ID getId();
-
 	static ID getRunningId();
 	static Thread * getThreadById(ID id);
 	static ID fork();
 	static void exit();
 	static void waitForForkChildren();
-
 protected:
 	friend class PCB;
 	friend class Kernel;
-
 	Thread (StackSize stackSize = defaultStackSize, Time timeSlice = defaultTimeSlice);
-
 	virtual void run(){}
-	virtual Thread* clone() const; //ovo je bilo const
-
+	virtual Thread* clone() const;
 	PCB* myPCB;
 private:
 };

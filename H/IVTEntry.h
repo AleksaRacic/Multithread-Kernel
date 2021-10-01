@@ -1,10 +1,3 @@
-/*
- * IVTEntry.h
- *
- *  Created on: Sep 20, 2021
- *      Author: OS1
- */
-
 #ifndef IVTENTRY_H_
 #define IVTENTRY_H_
 

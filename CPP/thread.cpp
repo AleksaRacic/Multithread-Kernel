@@ -1,16 +1,7 @@
-/*
- * thread.cpp
- *
- *  Created on: Sep 15, 2021
- *      Author: OS1
- */
-
 #include "thread.h"
 #include "PCB.h"
 #include "kernel.h"
 #include "debug.h"
-
-#include <STDIO.H>
 
 Thread::Thread(StackSize stackSize, Time timeSlice) {
 	myPCB = new PCB(this, stackSize, timeSlice);
@@ -22,7 +13,7 @@ Thread::~Thread() {
 }
 
 void dispatch(){
-	Kernel::dispatch(); //videti hoce li ovo praviti problem kasnje
+	Kernel::dispatch();
 }
 
 Thread*  Thread::getThreadById(ID id){
@@ -34,7 +25,6 @@ void Thread::start(){
 	myPCB->start();
 	systemUnlock();
 }
-
 
 ID Thread::getRunningId(){
 	return PCB::getRunningId();
@@ -49,7 +39,6 @@ ID Thread::getId(){
 }
 
 void Thread::exit(){
-	//nije testirano
 	systemLock();
 	Kernel::running->setFinished();
 	systemUnlock();
@@ -84,8 +73,7 @@ ID Thread::fork(){
 	}
 }
 
-
-Thread* Thread::clone()const{
+Thread* Thread::clone() const {
 	return NULL;
 }
 

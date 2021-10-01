@@ -1,18 +1,12 @@
-/*
- * KernelSem.h
- *
- *  Created on: Aug 18, 2021
- *      Author: OS1
- */
-
 #ifndef KERSEM_H_
 #define KERSEM_H_
 
-class PCB;
 #define SemList LinkedList<KernelSem*>
 #define PCBList LinkedList<PCB*>
 
 #include "list.h"
+
+class PCB;
 
 typedef unsigned int Time; // time, x 55ms
 

@@ -1,17 +1,8 @@
-/*
- * PCB.cpp
- *
- *  Created on: Sep 15, 2021
- *      Author: OS1
- */
-
-#include <iostream.h>
 #include "kernel.h"
 #include "PCB.h"
 #include "SCHEDULE.H"
 #include "debug.h"
 #include <dos.h>
-
 
 int PCB::max_id = 0;
 PCBList* PCB::allPCB = new PCBList();
@@ -24,16 +15,14 @@ processorTime(time_slice), my_status(CREATED), blocked_time(0), myID(max_id++), 
 	waitList = new PCBList();
 	allPCB->push_back(this);
 	time_left = time_slice;
-
 	myParent = NULL;
-	sem = NULL;
+	sem =  new Semaphore(0);
 
 	#ifdef PCBCREATEDEBUG
-	synchronizedPrintf("T: %d\n", myID); //promeniti na synchrnizedPrintf
+	synchronizedPrintf("T: %d\n", myID);
 	#endif
 
-
-	if(stack_size > MAX_STACK_SIZE) stack_size = MAX_STACK_SIZE; //dodaj uslov i za min stack
+	if(stack_size > MAX_STACK_SIZE) stack_size = MAX_STACK_SIZE;
 	int sSize = stack_size / sizeof(unsigned);
 
 	stack_pointer = new unsigned[sSize];
@@ -54,20 +43,16 @@ processorTime(time_slice), my_status(CREATED), blocked_time(0), myID(max_id++), 
 			ss = FP_SEG(stack_pointer + sSize);
 			#endif
 			bp = sp;
-			//fork
 			childreen_no = 0;
 	}else{
-		synchronizedPrintf("MEMFULL: stack"); //ovo doraditi i istestirati
+		synchronizedPrintf("MEMFULL: stack");
 	}
 }
-
-//dodati static konstruktor za main
 
 PCB::PCB() : myT(NULL), processorTime(0), my_status(CREATED), blocked_time(0), myID(max_id++), myParent(NULL) {
 	bp = 0;
 	ss = 0;
 	sp = 0;
-	//allPCB->push_back(this); videti da li ovo ima smisla
 	resetMyTime();
 	time_left = 0;
 	stack_pointer = NULL;
@@ -159,11 +144,9 @@ void PCB::wrapper(){
 	Kernel::dispatch();
 }
 
-
 ID PCB::getID()volatile{
 	return myID;
 }
-
 
 PCB* PCB::getPCBById(ID _id){
 	systemLock();
@@ -171,7 +154,7 @@ PCB* PCB::getPCBById(ID _id){
 	retPCB = NULL;
 	allPCB->applyAll(compareIDWrapper);
 	PCB* tmp = (PCB*)retPCB;
-	systemUnlock(); //Ako se ne zakljuca, moze neka druga nit izmeniti retPCB
+	systemUnlock();
 	return tmp;
 }
 
@@ -187,23 +170,25 @@ void PCB::resetBlocked() volatile {
 	Scheduler::put((PCB*)this);
 }
 
-int PCB::decProcessorTime()volatile{
+int PCB::decProcessorTime() volatile {
 	if(processorTime == 0) return 0;
 	if(--time_left <= 0){
-		my_status = READY; // ovo nije dobro, ja mislim
+		my_status = READY;
 		return 1;
 	}else{
 		return 0;
 	}
 }
 
-int PCB::decBlockedTime()volatile{
+int PCB::decBlockedTime() volatile {
 	if(blocked_time == 0) return 0;
 	if(--blocked_time <= 0){
 		unblocked_by_PCB = 0;
+
 		#ifdef UNBLOCKEDDEBUG
 		synchronizedPrintf("Sem t: ");
 		#endif
+
 		resetBlocked();
 		return 1;
 	}else{
@@ -238,20 +223,15 @@ int PCB::clone(PCB* parentPCB){
 	parentSS = _SS;
 	parentSP = _SP;
 	parentBP = _BP;
-	parent_stack_top = (char*) MK_FP(parentSS, parentBP); //gadjamo bp, sve posle nas ne zanima
-	//sSize = parentPCB->stack_size/sizeof(unsigned); //ovo mozda cuvati
-	//if((int)stack_top - (int)parentPCB->stack_pointer + 12 > stack_size){
-		//return -1;
-	//}
 
+	parent_stack_top = (char*) MK_FP(parentSS, parentBP);
 	myParent = parentPCB;
-	//(parentPCB->stack_size - stack_size)/2
-	memcpy(stack_pointer, parentPCB->stack_pointer, stack_size); //dodati slucaj kada velicine steka nisu jednake
+
+	memcpy(stack_pointer, parentPCB->stack_pointer, stack_size); //Ne radi ako velicine stacka nisu jednake
 
 	child_stack_top = (char*)stack_pointer + (parent_stack_top - (char*)parentPCB->stack_pointer);
 
 	_SS = FP_SEG(child_stack_top);
-
 	_SP = FP_OFF(child_stack_top);
 
 
@@ -297,9 +277,6 @@ int PCB::clone(PCB* parentPCB){
 }
 
 Semaphore* PCB::getSemaphore() volatile {
-	if(sem == NULL){
-		sem =  new Semaphore(0);
-	}
 	return sem;
 }
 
@@ -311,7 +288,7 @@ void PCB::deleteSem() volatile {
 }
 
 void PCB::signalParent() volatile {
-	if(myParent && myParent->sem){
+	if(myParent){
 		myParent->sem->signal();
 	}
 }

@@ -1,10 +1,3 @@
-/*
- * KernelEv.cpp
- *
- *  Created on: Sep 20, 2021
- *      Author: OS1
- */
-
 #include "KernelEv.h"
 
 #include "KernelEv.h"
@@ -13,10 +6,8 @@
 #include "IVTEntry.h"
 #include "PCB.h"
 
-//global array with information about each entry (256 entries)
-extern IVTEntry* IVTEntries[]; //Mozda cu se jebati sa ovim
+extern IVTEntry* IVTEntries[];
 
-/*constructor, destructor*/
 KernelEv::KernelEv(IVTNo ivtNo) : entryNum(ivtNo) {
 	systemLock();
 	myPCB = (PCB*)Kernel::running;
@@ -25,7 +16,6 @@ KernelEv::KernelEv(IVTNo ivtNo) : entryNum(ivtNo) {
 }
 
 KernelEv::~KernelEv() {
-	//Videti da li treba da se odblokira
 	IVTEntries[entryNum]->setKernelEv(NULL);
 }
 

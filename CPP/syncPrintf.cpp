@@ -1,10 +1,3 @@
-/*
- * synchronizedPrintf.cpp
- *
- *  Created on: Aug 19, 2021
- *      Author: OS1
- */
-
 #include <STDIO.H>
 #include <STDARG.H>
 #include "kernel.h"

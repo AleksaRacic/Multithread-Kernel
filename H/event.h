@@ -3,10 +3,6 @@
 
 #include "IVTEntry.h"
 
-//declaration of interrupt routine #numEntry
-//creating IVTEntry object on stack linked with that entryNum and that routine
-//interrupt routine for #numEntry
-
 #define PREPAREENTRY(numEntry, callOld)\
 \
 void interrupt inter##numEntry(...); \

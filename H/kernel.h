@@ -1,18 +1,10 @@
-/*
- * kernel.h
- *
- *  Created on: Sep 15, 2021
- *      Author: OS1
- */
-
 #ifndef KERNEL_H_
 #define KERNEL_H_
 
-//#include "PCB.h"
+#include <dos.h>
+
 class PCB;
 class Thread;
-
-#include <dos.h>
 
 #define NULL 0
 
@@ -27,7 +19,7 @@ class Thread;
 #define systemUnlock() {Kernel::int_locked = 0;\
 if(Kernel::switch_context_req_timer||Kernel::switch_context_req_disp) Kernel::dispatch();}
 
-//
+
 void tick();
 
 
@@ -36,7 +28,7 @@ public:
 
 	static volatile PCB *running, *mainPCB, *idle;
 
-	static Thread* idleT; //Videti zasto ne moze idleThread
+	static Thread* idleT;
 
 	static volatile int int_locked, switch_context_req_disp, switch_context_req_timer;
 

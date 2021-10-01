@@ -3,7 +3,6 @@
 
 #define NULL 0
 
-/*Lista cuva elemente po kopiji, promeni da cuva po referenci*/
 template<class T>
 class LinkedList {
 public:

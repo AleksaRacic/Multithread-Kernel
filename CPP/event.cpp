@@ -11,11 +11,9 @@ Event::Event (IVTNo ivtNo){
 }
 
 Event::~Event (){
-	//videti da li ovde treba lock
 	delete myImpl;
 }
 
-//interrupt masked because in half of wait, signal can be called from interrupt and this is a critical section for event value
 void Event::wait (){
 	systemLock();
 	myImpl->wait();
