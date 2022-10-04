@@ -1,6 +1,6 @@
-# Projekat iz predmeta OS1
+# Multithread Kernel
 
-Izrada školskog kernela koji podržava rad sa nitima, semafore i događaje.
-Dodatna funkcionalnost: sistemski poziv FORK.
+School Kernel with Multithreading, Semaphore and Events support.
+Additional functionality: FORK System Call
 
-Modifikacije: https://si.kocka.tech/wiki/%D0%9E%D0%A11
+Modifications: https://si.kocka.tech/wiki/%D0%9E%D0%A11
